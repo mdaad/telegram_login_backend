@@ -1,59 +1,27 @@
 from flask import Flask, request, jsonify
-import random, json, time
-from telegram import Bot
+import random
 
 app = Flask(__name__)
-bot_token = "7848313142:AAG3EbL9OLkM4xvMFOCDZ19Aix3CPhgh0bQ"
-bot = Bot(token=bot_token)
 
-@app.route('/send-token', methods=['POST'])
+@app.route("/")
+def home():
+    return "Telegram Token Backend Running!"
+
+@app.route("/send_token", methods=["POST"])
 def send_token():
     data = request.get_json()
-    username = data['username']
+    telegram_id = data.get("telegram_id")
+
+    if not telegram_id:
+        return jsonify({"error": "Missing telegram_id"}), 400
+
     token = str(random.randint(100000, 999999))
+    print(f"Sending token {token} to Telegram ID: {telegram_id}")
 
-    try:
-        bot.send_message(chat_id=f"@{username}", text=f"Your login token: {token}")
+    # Yahan Telegram bot se message bhejne ka logic aayega
+    # Jaise: bot.send_message(chat_id=telegram_id, text=f"Your login token: {token}")
 
-        with open('tokens.json', 'r+') as file:
-            try:
-                tokens = json.load(file)
-            except:
-                tokens = {}
+    return jsonify({"message": "Token sent successfully", "token": token})
 
-            tokens[username] = {
-                "token": token,
-                "expiry": time.time() + 300
-            }
-
-            file.seek(0)
-            json.dump(tokens, file)
-            file.truncate()
-
-        return jsonify({"success": True, "message": "Token sent!"})
-
-    except Exception as e:
-        return jsonify({"success": False, "message": str(e)})
-
-@app.route('/verify-token', methods=['POST'])
-def verify_token():
-    data = request.get_json()
-    username = data['username']
-    token = data['token']
-
-    with open('tokens.json', 'r') as file:
-        tokens = json.load(file)
-
-    if username in tokens:
-        saved = tokens[username]
-        if saved['token'] == token and time.time() < saved['expiry']:
-            return jsonify({"success": True, "message": "Verified!"})
-
-    return jsonify({"success": False, "message": "Invalid or expired token."})
-
-@app.route('/')
-def home():
-    return "Bot is running"
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8080)
